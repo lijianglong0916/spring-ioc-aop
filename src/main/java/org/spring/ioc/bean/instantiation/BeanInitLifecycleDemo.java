@@ -7,13 +7,12 @@ import org.springframework.beans.MutablePropertyValues;
 import org.springframework.beans.PropertyValues;
 import org.springframework.beans.factory.config.BeanPostProcessor;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
+import org.springframework.beans.factory.config.DestructionAwareBeanPostProcessor;
 import org.springframework.beans.factory.config.InstantiationAwareBeanPostProcessor;
 import org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.CommonAnnotationBeanPostProcessor;
-
-import javax.annotation.PostConstruct;
 
 /**
  * bean 实例化生命周期demo
@@ -40,13 +39,7 @@ public class BeanInitLifecycleDemo {
         DefaultListableBeanFactory defaultListableBeanFactory = new DefaultListableBeanFactory();
         AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(defaultListableBeanFactory);
         context.register(BeanAwareDemo.class,BeanInitLifecycleDemo.class);
-
         ConfigurableListableBeanFactory beanFactory = context.getBeanFactory();
-        /**
-         * 不添加BeanPostProcessor时默认为{@link CommonAnnotationBeanPostProcessor}
-         * 解决{@linK BeanAwareDemo } -----> {@link PostConstruct}初始化
-         *
-         */
 
 
         /**
@@ -100,17 +93,45 @@ public class BeanInitLifecycleDemo {
          */
 
         /**
+         * 不添加BeanPostProcessor时默认为{@link CommonAnnotationBeanPostProcessor}
+         * 解决{@linK BeanAwareDemo } -----> {@link PostConstruct}初始化
          * 添加{@link CommonAnnotationBeanPostProcessor};
-         * 以及自定义{@link InstantiationAwareBeanPostProcessor}
+         * 以及自定义{@link InstantiationAwareBeanPostProcessor} 、{@link SelfDestructionAwareBeanPostProcessor}
          *
          */
         beanFactory.addBeanPostProcessor(new CommonAnnotationBeanPostProcessor());
         beanFactory.addBeanPostProcessor(new SelfInstantiationAwareBeanPostProcessor());
+        beanFactory.addBeanPostProcessor(new SelfDestructionAwareBeanPostProcessor());
         context.refresh();
         BeanAwareDemo beanAwareDemo = beanFactory.getBean( BeanAwareDemo.class);
         log.info(beanAwareDemo.toString());
+        beanFactory.destroyBean("beanAwareDemo",beanAwareDemo);
         context.close();
     }
+
+    /**
+     * 自定义destroy回调{@link DestructionAwareBeanPostProcessor}
+     * 销毁顺序
+     * 1.requiresDestruction（这一步返回true时第三步才会被回调）
+     * 2.@PostConstruct
+     * 3.postProcessBeforeDestruction
+     */
+    static class SelfDestructionAwareBeanPostProcessor implements DestructionAwareBeanPostProcessor{
+
+        @Override
+        public void postProcessBeforeDestruction(Object bean, String beanName) throws BeansException {
+            if (bean.getClass().equals(BeanAwareDemo.class) && beanName .equals("beanAwareDemo") ) {
+                log.info("------- postProcessBeforeDestruction destroy ---------------------");
+            }
+        }
+
+        @Override
+        public boolean requiresDestruction(Object bean) {
+            log.info("------- requiresDestruction destroy ---------------------");
+            return true;
+        }
+    }
+
 
 
     static class SelfInstantiationAwareBeanPostProcessor implements InstantiationAwareBeanPostProcessor {
@@ -120,7 +141,7 @@ public class BeanInitLifecycleDemo {
             //找到原有的person bean进行替换
             if (beanClass.equals(BeanAwareDemo.class) && beanName .equals("beanAwareDemo") ) {
                 BeanAwareDemo beanAwareDemo = new BeanAwareDemo().setName("postProcessBeforeInstantiation init");
-                log.info("----------------"+beanAwareDemo+"---- postProcessBeforeInstantiation init --------");
+                log.info("------- postProcessBeforeInstantiation init ---------"+beanAwareDemo+"------------");
                 /**
                  * -------------------------这里返回bean实例时，当前bean剩余对应的---------------------------------
                  * -------------------------{@link BeanPostProcessor}将不会再被执行-----------------------------
@@ -154,7 +175,7 @@ public class BeanInitLifecycleDemo {
         public Object postProcessBeforeInitialization(Object bean, String beanName) throws BeansException {
             //----------------------------bean初始化Before----------------------------------
             if (bean.getClass().equals(BeanAwareDemo.class)){
-                log.info("----------------"+bean+"---- postProcessBeforeInitialization --------");
+                log.info("-------- postProcessBeforeInitialization --------"+bean+"------------");
             }
             return null;
         }
@@ -163,7 +184,7 @@ public class BeanInitLifecycleDemo {
         public Object postProcessAfterInitialization(Object bean, String beanName) throws BeansException {
             //----------------------------bean初始化After----------------------------------
             if (bean.getClass().equals(BeanAwareDemo.class)) {
-                log.info("----------------" + bean + "----- postProcessAfterInitialization -------");
+                log.info("------- postProcessAfterInitialization ---------" + bean + "------------");
             }
             return null;
         }

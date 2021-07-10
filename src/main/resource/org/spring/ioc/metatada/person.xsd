@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+
+<xsd:schema xmlns="http://www.spring.ioc.aop/schema/persons"
+            xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+            targetNamespace="http://www.spring.ioc.aop/schema/persons">
+
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace"/>
+
+    <!--定义person 类型-->
+
+    <xsd:complexType name="person">
+        <xsd:attribute name="id" type="xsd:long" use="required"/>
+        <xsd:attribute name="name" type="xsd:string" use="required"/>
+    </xsd:complexType>
+
+    <!--定义person属性-->
+
+    <xsd:element name="person" type="person"/>
+
+
+</xsd:schema>

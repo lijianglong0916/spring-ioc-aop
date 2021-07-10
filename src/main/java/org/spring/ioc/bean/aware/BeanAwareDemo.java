@@ -13,6 +13,7 @@ import org.springframework.core.env.Environment;
 import org.springframework.core.io.ResourceLoader;
 
 import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
 
 /**
  * Aware接口回调
@@ -48,6 +49,14 @@ public class BeanAwareDemo implements BeanNameAware, BeanFactoryAware,
     public void init(){
         log.info("-------@PostConstruct init---------");
         this.name="@PostConstruct init";
+    }
+
+    @PreDestroy
+    public void destroy(){
+        /**
+         * {@link DisposableBeanAdapter}的destroy()方法销毁bean
+         */
+        log.info("------------@PreDestroy destroy---------");
     }
 
     public static void main(String[] args) {
