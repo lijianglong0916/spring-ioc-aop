@@ -8,4 +8,5 @@
        http://www.spring.ioc.aop/schema/persons/person.xsd"
 >
     <persons:person id="123" name="王五"/>
+
 </beans>
